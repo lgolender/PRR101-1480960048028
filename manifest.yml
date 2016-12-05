@@ -1,0 +1,12 @@
+applications:
+- path: .
+  memory: 128M
+  instances: 1
+  domain: mybluemix.net
+  name: PRR101
+  host: PRR101
+  disk_quota: 1024M
+  services:
+  - AlchemyAPI-PPR101
+  - PRR101-TA
+  buildpack: python_buildpack
