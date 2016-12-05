@@ -1,45 +1,46 @@
-# Copyright 2015 IBM Corp. All Rights Reserved.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-# https://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
 import os
 from flask import Flask, jsonify
 
-app = Flask(__name__)
+from ProcessData import ProcessData
+from RawData import RawData
+from Watson import Watson
+
+
+config = {
+    "api_key": 'c3701f52114fce9b3de6e4e3ef7505119ac7336f',
+    "password": "78zYzMEv87Xf",
+    "username": "2747da81-393b-4c7c-8e6b-6568f1983e3b"
+}
+watson = Watson(config)
+
+rd = RawData()
+rd.get_data_file()
+
+pd = ProcessData(rd, watson, gather_data=False, use_static_data=True)
+pd.process_all()
+
+app = Flask(__name__, static_folder='static')
+
 
 @app.route('/')
 def Welcome():
     return app.send_static_file('index.html')
 
-@app.route('/myapp')
-def WelcomeToMyapp():
-    return 'Welcome again to my app running on Bluemix!'
 
-@app.route('/api/people')
-def GetPeople():
-    list = [
-        {'name': 'John', 'age': 28},
-        {'name': 'Bill', 'val': 26}
-    ]
-    return jsonify(results=list)
+@app.route('/api/mentions/<search_movie>')
+def mentions_program(search_movie):
+    reputation = pd.get_data(search_movie)
+    content_obj = { 'movie_name' : search_movie, 'reputation' : reputation}
+    response = jsonify(content_obj)
+    response.headers['Access-Control-Allow-Origin'] = '*'
+    return response
 
-@app.route('/api/people/<name>')
+
+@app.route('/api/people/<name2>')
 def SayHello(name):
-    message = {
-        'message': 'Hello ' + name
-    }
-    return jsonify(results=message)
+    result = watson.get_analysis('https://fee.org/articles/thanksgiving-was-a-triumph-of-capitalism-over-collectivism/')
+    return jsonify(result)
 
 port = os.getenv('PORT', '5000')
 if __name__ == "__main__":
-	app.run(host='0.0.0.0', port=int(port))
+    app.run(host='0.0.0.0', port=int(port))
